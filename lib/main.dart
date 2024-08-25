@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'Assets/app_theme.dart';
 import 'Pages/login.dart';
+import 'Pages/signup.dart';
 
 void main() {
   runApp(MyApp());
@@ -12,7 +13,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: AppTheme.darkTheme, // Set the default theme to dark
-      home: SignUpPage(),
+      home: LoginPage(),
     );
   }
 }

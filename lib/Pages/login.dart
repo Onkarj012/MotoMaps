@@ -1,47 +1,21 @@
-import 'dart:async';
-
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:motomaps/Pages/signup.dart';
 
-class SignUpPage extends StatefulWidget {
+class LoginPage extends StatefulWidget {
   @override
-  _SignUpPageState createState() => _SignUpPageState();
+  _LoginPageState createState() => _LoginPageState();
 }
 
-class _SignUpPageState extends State<SignUpPage> {
-  bool otpSent = false;
-  bool isButtonDisabled = false;
-  late Timer _timer;
-  int _start = 30; // Time in seconds
-
-  void startTimer() {
-    const oneSec = const Duration(seconds: 1);
-    _timer = Timer.periodic(
-      oneSec,
-          (Timer timer) {
-        if (_start == 0) {
-          setState(() {
-            isButtonDisabled = false;
-            timer.cancel();
-          });
-        } else {
-          setState(() {
-            _start--;
-          });
-        }
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -51,145 +25,67 @@ class _SignUpPageState extends State<SignUpPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // App Logo
-                SizedBox(height: 30),
                 CircleAvatar(
-                  radius: 42,
-                  backgroundColor: Colors.black,
-                  backgroundImage: AssetImage('lib/Assets/wheel-small.png'), // Ensure this path is correct
+                  radius: 40,
+                  backgroundImage: AssetImage('lib/Assets/wheel-small.png'), // Update path as needed
+                  backgroundColor: Colors.black, // Ensures background color is black
                 ),
-                SizedBox(height: 10),
+                SizedBox(height: 20),
                 // App Name
                 Text(
                   'MotoMaps',
-                  style: Theme.of(context).textTheme.headlineLarge,
-                ),
-                SizedBox(height: 10),
-                // Sign Up Title
-                Text(
-                  'Sign Up',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
-                SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: HoverTextField(
-                        labelText: 'First name',
-                      ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: HoverTextField(
-                        labelText: 'Last name',
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 15),
-                HoverTextField(
-                  labelText: 'Username',
-                ),
-                SizedBox(height: 15),
-                HoverTextField(
-                  labelText: 'Email Address',
-                ),
-                SizedBox(height: 15),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: isButtonDisabled
-                        ? null
-                        : () {
-                      setState(() {
-                        otpSent = true;
-                        isButtonDisabled = true;
-                        _start = 30;
-                        startTimer();
-                      });
-                    },
-                    child: isButtonDisabled
-                        ? Text(
-                        'Send OTP ($_start s)',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    )
-                        : Text(
-                        'Send OTP',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800], // Ensure this color matches the theme's button color
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white, // Ensure this uses the theme's text color
-                      ),
-                    ),
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 15),
-                if (otpSent)
-                  Row(
+                SizedBox(height: 20),
+                // Login Title
+                Text(
+                  'Login',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 20),
+                // Login Form
+                Form(
+                  key: _formKey,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: HoverTextField(
-                          labelText: 'Enter OTP',
-                        ),
+                      HoverTextField(
+                        controller: _usernameController,
+                        labelText: 'Username',
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            // Handle OTP verification
-                          },
-                          child: Text(
-                              'Verify OTP',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey[800], // Ensure this color matches the theme's button color
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            padding: EdgeInsets.symmetric(vertical: 15),
-                            textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Colors.white, // Ensure this uses the theme's text color
-                            ),
-                          ),
-                        ),
+                      SizedBox(height: 15),
+                      HoverTextField(
+                        controller: _passwordController,
+                        labelText: 'Password',
+                        obscureText: true,
                       ),
                     ],
                   ),
-                SizedBox(height: 15),
-                HoverTextField(
-                  labelText: 'Password',
-                  obscureText: true,
                 ),
-                SizedBox(height: 15),
-                HoverTextField(
-                  labelText: 'Confirm password',
-                  obscureText: true,
-                ),
-                SizedBox(height: 15),
+                SizedBox(height: 20),
+                // Login Button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Handle sign-up here
+                      // Handle login logic here
                     },
                     child: Text(
-                        'Signup →',
+                        'Login',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800], // Ensure this color matches the theme's button color
+                      backgroundColor: Colors.grey[800], // Darker gray background
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                       padding: EdgeInsets.symmetric(vertical: 15),
                       textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white, // Ensure this uses the theme's text color
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -221,7 +117,7 @@ class _SignUpPageState extends State<SignUpPage> {
                       'lib/Assets/google-logo.png',
                     ),
                     label: Text(
-                        'Signup with Google',
+                      'Signup with Google',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                     style: ElevatedButton.styleFrom(
@@ -236,6 +132,38 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
+                SizedBox(height: 20),
+                // "Join if new user" Button
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: 'New rider? ',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.normal,
+                            color: Colors.lightBlueAccent,
+                          ),
+                        ),
+                        TextSpan(
+                          text: 'Login',
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.lightBlueAccent,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => SignUpPage()),
+                              );
+                            },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -245,14 +173,17 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 }
 
+// Reusable HoverTextField Widget
 class HoverTextField extends StatefulWidget {
   final String labelText;
   final bool obscureText;
+  final TextEditingController controller;
 
   const HoverTextField({
     Key? key,
     required this.labelText,
     this.obscureText = false,
+    required this.controller,
   }) : super(key: key);
 
   @override
@@ -278,20 +209,20 @@ class _HoverTextFieldState extends State<HoverTextField> {
         });
       },
       child: TextField(
+        controller: widget.controller,
         decoration: InputDecoration(
           labelText: widget.labelText,
-          labelStyle: TextStyle(color: offWhite), // Custom off-white for label
+          labelStyle: TextStyle(color: offWhite),
           filled: true,
           fillColor: fillColor,
-          contentPadding: EdgeInsets.symmetric(vertical: 13, horizontal: 15), // Consistent padding
+          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
             borderSide: BorderSide.none,
           ),
         ),
-        style: TextStyle(color: offWhite), // Custom off-white for text
+        style: TextStyle(color: offWhite),
         obscureText: widget.obscureText,
-        keyboardType: widget.labelText == 'Enter OTP' ? TextInputType.number : TextInputType.text, // Numeric keyboard for OTP
       ),
     );
   }
