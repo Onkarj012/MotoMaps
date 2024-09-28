@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:motomaps/Pages/signup.dart';
 
+import '../utils/HoverTextField.dart';
+
 class LoginPage extends StatefulWidget {
   @override
   _LoginPageState createState() => _LoginPageState();
@@ -25,28 +27,28 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // App Logo
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 40,
                   backgroundImage: AssetImage('lib/Assets/wheel-small.png'), // Update path as needed
                   backgroundColor: Colors.black, // Ensures background color is black
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // App Name
                 Text(
-                  'MotoMaps',
+                  'MotoMaps.',
                   style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Login Title
                 Text(
-                  'Login',
+                  'Log in',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Login Form
                 Form(
                   key: _formKey,
@@ -56,7 +58,7 @@ class _LoginPageState extends State<LoginPage> {
                         controller: _usernameController,
                         labelText: 'Username',
                       ),
-                      SizedBox(height: 15),
+                      const SizedBox(height: 15),
                       HoverTextField(
                         controller: _passwordController,
                         labelText: 'Password',
@@ -65,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
                     ],
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Login Button
                 SizedBox(
                   width: double.infinity,
@@ -73,24 +75,24 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: () {
                       // Handle login logic here
                     },
-                    child: Text(
-                        'Login',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800], // Darker gray background
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
+                    child: Text(
+                        'Login',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Container(
                   height: 2,
                   width: double.infinity,
@@ -106,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
@@ -125,14 +127,14 @@ class _LoginPageState extends State<LoginPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white, // Ensure this uses the theme's text color
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // "Join if new user" Button
                 Align(
                   alignment: Alignment.centerLeft,
@@ -147,7 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                         TextSpan(
-                          text: 'Login',
+                          text: 'Sign up',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.lightBlueAccent,
@@ -168,61 +170,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-// Reusable HoverTextField Widget
-class HoverTextField extends StatefulWidget {
-  final String labelText;
-  final bool obscureText;
-  final TextEditingController controller;
-
-  const HoverTextField({
-    Key? key,
-    required this.labelText,
-    this.obscureText = false,
-    required this.controller,
-  }) : super(key: key);
-
-  @override
-  _HoverTextFieldState createState() => _HoverTextFieldState();
-}
-
-class _HoverTextFieldState extends State<HoverTextField> {
-  Color fillColor = Colors.grey[850]!;
-
-  @override
-  Widget build(BuildContext context) {
-    Color offWhite = Color(0xFFFAFAFA); // Light off-white color
-
-    return MouseRegion(
-      onEnter: (event) {
-        setState(() {
-          fillColor = Colors.grey[700]!;
-        });
-      },
-      onExit: (event) {
-        setState(() {
-          fillColor = Colors.grey[850]!;
-        });
-      },
-      child: TextField(
-        controller: widget.controller,
-        decoration: InputDecoration(
-          labelText: widget.labelText,
-          labelStyle: TextStyle(color: offWhite),
-          filled: true,
-          fillColor: fillColor,
-          contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
-          ),
-        ),
-        style: TextStyle(color: offWhite),
-        obscureText: widget.obscureText,
       ),
     );
   }

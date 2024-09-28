@@ -1,24 +1,265 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
+import '../utils/HoverTextField.dart';
 import 'login.dart';
 
 class SignUpPage extends StatefulWidget {
+
   @override
   _SignUpPageState createState() => _SignUpPageState();
 }
 
 class _SignUpPageState extends State<SignUpPage> {
+  final _formKey = GlobalKey<FormState>();
   bool otpSent = false;
   bool isButtonDisabled = false;
   late Timer _timer;
-  int _start = 30; // Time in seconds
+  int _start = 30;
+
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+
+  final Map<String, String> _formData = {};
+  bool _isLoading = false;
+  bool _isOTPLoading = false;
+  bool _isVerified = false;
+  String? _error;
+  String? _otpError;
+  String? _token;
+
+  // final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  Future<void> handleGoogleSignUp() async {
+    // setState(() {
+    //   _isLoading = true;
+    // });
+    //
+    // try {
+    //   final FirebaseAuth auth = FirebaseAuth.instance;
+    //   final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    //
+    //   if (googleUser == null) {
+    //     setState(() {
+    //       _isLoading = false;
+    //     });
+    //     return;
+    //   }
+    //
+    //   final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    //
+    //   final OAuthCredential credential = GoogleAuthProvider.credential(
+    //     accessToken: googleAuth.accessToken,
+    //     idToken: googleAuth.idToken,
+    //   );
+    //
+    //   final UserCredential userCredential = await auth.signInWithCredential(credential);
+    //   final User? user = userCredential.user;
+    //
+    //   if (user != null) {
+    //     final response = await http.post(
+    //       Uri.parse('https://motomaps-backend-1.onrender.com/auth/google'),
+    //       headers: {
+    //         'Content-Type': 'application/json',
+    //       },
+    //       body: jsonEncode({
+    //         'name': user.displayName,
+    //         'email': user.email,
+    //         'profile_pic': user.photoURL,
+    //       }),
+    //     );
+    //
+    //     if (response.statusCode == 200) {
+    //       final prefs = await SharedPreferences.getInstance();
+    //       final rawCookie = response.headers['set-cookie'];
+    //       if (rawCookie != null) {
+    //         _token = rawCookie.split(';').firstWhere((cookie) => cookie.startsWith('access_token')).split('=').last;
+    //         await prefs.setString('jwt', _token!);
+    //       }
+    //       // Navigate to the home screen upon successful sign-up
+    //       // Navigator.pushReplacementNamed(context, '/home');
+    //     } else {
+    //       final errorResponse = jsonDecode(response.body);
+    //       setState(() {
+    //         _error = errorResponse['error'];
+    //       });
+    //     }
+    //   }
+    // } catch (e) {
+    //   setState(() {
+    //     _error = 'Unexpected error occurred. Please try again.';
+    //   });
+    // } finally {
+    //   setState(() {
+    //     _isLoading = false;
+    //   });
+    // }
+  }
+
+  Future<void> sendOTP() async {
+    setState(() {
+      _isOTPLoading = true;
+    });
+
+    if (_formData['email'] == null || _formData['email']!.isEmpty) {
+      setState(() {
+        _otpError = 'Please enter an email for OTP verification';
+        _isOTPLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://motomaps-backend-1-gvet.onrender.com/auth/sendOTP'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': _formData['email']}),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          otpSent = true;
+          _isOTPLoading = false;
+        });
+      } else {
+        setState(() {
+          _otpError = 'Failure to send OTP. Please try again later.';
+          _isOTPLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _otpError = 'Unexpected error occurred while sending OTP.';
+        _isOTPLoading = false;
+      });
+    }
+  }
+
+  Future<void> verifyOTP() async {
+    setState(() {
+      _isOTPLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://motomaps-backend-1-gvet.onrender.com/auth/verifyOTP'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _formData['email'],
+          'otp': _formData['otp'],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _isVerified = true;
+          _otpError = null;
+        });
+      } else {
+        setState(() {
+          _otpError = 'Incorrect OTP';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _otpError = 'Unexpected error occurred while verifying OTP.';
+      });
+    } finally {
+      setState(() {
+        _isOTPLoading = false;
+      });
+    }
+  }
+
+  Future<void> signupUser() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    final requiredFields = [
+      'firstname',
+      'lastname',
+      'username',
+      'email',
+      'password',
+      'confirmpassword',
+    ];
+    final isFormValid = requiredFields.every((field) => _formData[field]?.isNotEmpty ?? false);
+
+    if (!isFormValid) {
+      setState(() {
+        _error = 'All fields are required';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (!_isVerified) {
+      setState(() {
+        _error = 'Email Verification failed';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_formData['password'] != _formData['confirmpassword']) {
+      setState(() {
+        _error = 'Passwords do not match';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://motomaps-backend-1-gvet.onrender.com/auth/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': _formData['username'],
+          'email': _formData['email'],
+          'password': _formData['password'],
+          'firstname': _formData['firstname'],
+          'lastname': _formData['lastname'],
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        String? rawCookie = response.headers['set-cookie'];
+        if (rawCookie != null) {
+          _token = rawCookie.split(';').firstWhere((cookie) => cookie.startsWith('access_token')).split('=').last;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('jwt', _token!);
+        }
+        // Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        final errorResponse = jsonDecode(response.body);
+        setState(() {
+          _error = errorResponse['error'];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Unexpected error occurred. Please try again.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   void startTimer() {
-    const oneSec = const Duration(seconds: 1);
+    const oneSec = Duration(seconds: 1);
     _timer = Timer.periodic(
       oneSec,
           (Timer timer) {
@@ -38,6 +279,13 @@ class _SignUpPageState extends State<SignUpPage> {
 
   @override
   void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _usernameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _otpController.dispose();
     _timer.cancel();
     super.dispose();
   }
@@ -54,62 +302,100 @@ class _SignUpPageState extends State<SignUpPage> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // App Logo
-                SizedBox(height: 30),
-                CircleAvatar(
+                const SizedBox(height: 30),
+                const CircleAvatar(
                   radius: 42,
                   backgroundColor: Colors.black,
                   backgroundImage: AssetImage('lib/Assets/wheel-small.png'), // Ensure this path is correct
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 // App Name
                 Text(
-                  'MotoMaps',
+                  'MotoMaps.',
                   style: Theme.of(context).textTheme.headlineLarge,
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 // Sign Up Title
                 Text(
                   'Sign Up',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
-                SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: HoverTextField(
-                        labelText: 'First name',
+                const SizedBox(height: 20),
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: HoverTextField(
+                              labelText: 'First name',
+                              controller: _firstNameController,
+                              onChanged: (value) {
+                                setState(() {
+                                 _formData['firstname'] = value.toString().trim();
+                                 _error = null;
+                                });
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: HoverTextField(
+                              labelText: 'Last name',
+                              controller: _lastNameController,
+                              onChanged: (value) {
+                                setState(() {
+                                  _formData['lastname'] = value.toString().trim();
+                                  _error = null;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: HoverTextField(
-                        labelText: 'Last name',
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 HoverTextField(
                   labelText: 'Username',
+                  controller: _usernameController,
+                  onChanged: (value) {
+                    setState(() {
+                      _formData['username'] = value.toString().trim();
+                      _error = null;
+                    });
+                  },
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 HoverTextField(
                   labelText: 'Email Address',
+                  controller: _emailController,
+                  onChanged: (value) {
+                    setState(() {
+                      _formData['email'] = value.toString().trim();
+                      _error = null;
+                      _otpError = null;
+
+                    });
+                  },
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: isButtonDisabled
-                        ? null
-                        : () {
-                      setState(() {
-                        otpSent = true;
-                        isButtonDisabled = true;
-                        _start = 30;
-                        startTimer();
-                      });
-                    },
+                    onPressed: isButtonDisabled ? null : sendOTP,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[800],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        color: Colors.white, // Ensure this uses the theme's text color
+                      ),
+                    ),
                     child: isButtonDisabled
                         ? Text(
                       'Send OTP ($_start s)',
@@ -119,85 +405,115 @@ class _SignUpPageState extends State<SignUpPage> {
                       'Send OTP',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey[800], // Ensure this color matches the theme's button color
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
-                      textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white, // Ensure this uses the theme's text color
-                      ),
-                    ),
                   ),
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 if (otpSent)
                   Row(
                     children: [
                       Expanded(
                         child: HoverTextField(
                           labelText: 'Enter OTP',
+                          controller: _otpController,
+                          onChanged: (value) {
+                            setState(() {
+                              _formData['otp'] = value.toString().trim();
+                              _error = null;
+                            });
+                          },
                         ),
                       ),
-                      SizedBox(width: 10),
+                      const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {
-                            // Handle OTP verification
-                          },
-                          child: Text(
-                            'Verify OTP',
-                            style: Theme.of(context).textTheme.bodyLarge,
-                          ),
+                          onPressed: _isOTPLoading ? null : verifyOTP,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.grey[800], // Ensure this color matches the theme's button color
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            padding: EdgeInsets.symmetric(vertical: 15),
+                            padding: const EdgeInsets.symmetric(vertical: 15),
                             textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                               color: Colors.white, // Ensure this uses the theme's text color
                             ),
+                          ),
+                          child: _isOTPLoading
+                              ? const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          )
+                              : Text(
+                            'Verify OTP',
+                            style: Theme.of(context).textTheme.bodyLarge,
                           ),
                         ),
                       ),
                     ],
                   ),
-                SizedBox(height: 15),
+                if (_otpError != null)
+                  Text(
+                    _otpError!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 HoverTextField(
                   labelText: 'Password',
                   obscureText: true,
+                  controller: _passwordController,
+                  onChanged: (value) {
+                    setState(() {
+                      _formData['password'] = value.toString().trim();
+                      _error = null;
+                    });
+                  },
                 ),
-                SizedBox(height: 15),
+                const SizedBox(height: 15),
                 HoverTextField(
                   labelText: 'Confirm password',
                   obscureText: true,
+                  controller: _confirmPasswordController,
+                  onChanged: (value) {
+                    setState(() {
+                      _formData['confirmpassword'] = value.toString().trim();
+                      _error = null;
+                    });
+                  },
                 ),
-                SizedBox(height: 15),
+                if (_error != null)
+                  Text(
+                    _error!,
+                    style: const TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                const SizedBox(height: 15),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Handle sign-up here
-                    },
-                    child: Text(
-                      'Signup →',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
+                    onPressed: _isLoading ? null : signupUser,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800], // Ensure this color matches the theme's button color
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white, // Ensure this uses the theme's text color
                       ),
                     ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    )
+                        : Text(
+                            'Signup →',
+                            style: Theme.of(context).textTheme.bodyLarge,
+                          ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Container(
                   height: 2,
                   width: double.infinity,
@@ -213,13 +529,11 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Handle Google sign-up here
-                    },
+                    onPressed: handleGoogleSignUp,
                     icon: Image.asset(
                       'lib/Assets/google-logo.png',
                     ),
@@ -232,14 +546,14 @@ class _SignUpPageState extends State<SignUpPage> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: Colors.white, // Ensure this uses the theme's text color
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 // Already a user? Login
                 Align(
                   alignment: Alignment.centerLeft,
@@ -254,7 +568,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           ),
                         ),
                         TextSpan(
-                          text: 'Login',
+                          text: 'Log in',
                           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Colors.lightBlueAccent,
@@ -275,58 +589,6 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-class HoverTextField extends StatefulWidget {
-  final String labelText;
-  final bool obscureText;
-
-  const HoverTextField({
-    Key? key,
-    required this.labelText,
-    this.obscureText = false,
-  }) : super(key: key);
-
-  @override
-  _HoverTextFieldState createState() => _HoverTextFieldState();
-}
-
-class _HoverTextFieldState extends State<HoverTextField> {
-  Color fillColor = Colors.grey[850]!;
-
-  @override
-  Widget build(BuildContext context) {
-    Color offWhite = Color(0xFFFAFAFA); // Light off-white color
-
-    return MouseRegion(
-      onEnter: (event) {
-        setState(() {
-          fillColor = Colors.grey[700]!;
-        });
-      },
-      onExit: (event) {
-        setState(() {
-          fillColor = Colors.grey[850]!;
-        });
-      },
-      child: TextField(
-        decoration: InputDecoration(
-          labelText: widget.labelText,
-          labelStyle: TextStyle(color: offWhite), // Custom off-white for label
-          filled: true,
-          fillColor: fillColor,
-          contentPadding: EdgeInsets.symmetric(vertical: 13, horizontal: 15), // Consistent padding
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
-          ),
-        ),
-        style: TextStyle(color: offWhite), // Custom off-white for text
-        obscureText: widget.obscureText,
-        keyboardType: widget.labelText == 'Enter OTP' ? TextInputType.number : TextInputType.text, // Numeric keyboard for OTP
       ),
     );
   }
