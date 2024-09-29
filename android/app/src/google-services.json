@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "311700076644",
+    "project_id": "motomaps-ff938",
+    "storage_bucket": "motomaps-ff938.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:311700076644:android:cac0d188985515e9370771",
+        "android_client_info": {
+          "package_name": "com.project.motomaps"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCcb3bnAxn7DRLEkU9Zs9aBHvlkXsTf6e4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

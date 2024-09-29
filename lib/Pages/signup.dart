@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -38,72 +40,72 @@ class _SignUpPageState extends State<SignUpPage> {
   String? _otpError;
   String? _token;
 
-  // final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   Future<void> handleGoogleSignUp() async {
-    // setState(() {
-    //   _isLoading = true;
-    // });
-    //
-    // try {
-    //   final FirebaseAuth auth = FirebaseAuth.instance;
-    //   final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-    //
-    //   if (googleUser == null) {
-    //     setState(() {
-    //       _isLoading = false;
-    //     });
-    //     return;
-    //   }
-    //
-    //   final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    //
-    //   final OAuthCredential credential = GoogleAuthProvider.credential(
-    //     accessToken: googleAuth.accessToken,
-    //     idToken: googleAuth.idToken,
-    //   );
-    //
-    //   final UserCredential userCredential = await auth.signInWithCredential(credential);
-    //   final User? user = userCredential.user;
-    //
-    //   if (user != null) {
-    //     final response = await http.post(
-    //       Uri.parse('https://motomaps-backend-1.onrender.com/auth/google'),
-    //       headers: {
-    //         'Content-Type': 'application/json',
-    //       },
-    //       body: jsonEncode({
-    //         'name': user.displayName,
-    //         'email': user.email,
-    //         'profile_pic': user.photoURL,
-    //       }),
-    //     );
-    //
-    //     if (response.statusCode == 200) {
-    //       final prefs = await SharedPreferences.getInstance();
-    //       final rawCookie = response.headers['set-cookie'];
-    //       if (rawCookie != null) {
-    //         _token = rawCookie.split(';').firstWhere((cookie) => cookie.startsWith('access_token')).split('=').last;
-    //         await prefs.setString('jwt', _token!);
-    //       }
-    //       // Navigate to the home screen upon successful sign-up
-    //       // Navigator.pushReplacementNamed(context, '/home');
-    //     } else {
-    //       final errorResponse = jsonDecode(response.body);
-    //       setState(() {
-    //         _error = errorResponse['error'];
-    //       });
-    //     }
-    //   }
-    // } catch (e) {
-    //   setState(() {
-    //     _error = 'Unexpected error occurred. Please try again.';
-    //   });
-    // } finally {
-    //   setState(() {
-    //     _isLoading = false;
-    //   });
-    // }
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final FirebaseAuth auth = FirebaseAuth.instance;
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      final UserCredential userCredential = await auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        final response = await http.post(
+          Uri.parse('https://motomaps-backend-1-gvet.onrender.com/auth/google'),
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: jsonEncode({
+            'name': user.displayName,
+            'email': user.email,
+            'profile_pic': user.photoURL,
+          }),
+        );
+
+        if (response.statusCode == 200) {
+          final prefs = await SharedPreferences.getInstance();
+          final rawCookie = response.headers['set-cookie'];
+          if (rawCookie != null) {
+            _token = rawCookie.split(';').firstWhere((cookie) => cookie.startsWith('access_token')).split('=').last;
+            await prefs.setString('jwt', _token!);
+          }
+          // Navigate to the home screen upon successful sign-up
+          // Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          final errorResponse = jsonDecode(response.body);
+          setState(() {
+            _error = errorResponse['error'];
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _error = 'Unexpected error occurred. Please try again.';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> sendOTP() async {

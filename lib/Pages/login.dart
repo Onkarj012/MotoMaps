@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:motomaps/Pages/signup.dart';
+import 'package:http/http.dart' as http;
 
 import '../utils/HoverTextField.dart';
 
@@ -11,8 +14,49 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _usernameController = TextEditingController();
+  String? _error;
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  Future<void> login() async {
+    const String url = "https://motomaps-backend-1-gvet.onrender.com/auth/login";
+    final email = _emailController.text.toString().trim();
+    final password = _passwordController.text.toString().trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _error = "All fields are mandatory";
+      return;
+    }
+
+    final Map<String, dynamic> formData = {
+      'email': email,
+      'password': password,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(formData),
+        // credentials: 'include',
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        // Dispatch success action here (e.g., using a state management solution)
+        print("Login successful: $data");
+        // Navigate to home screen
+      } else {
+        final data = json.decode(response.body);
+        // Handle error
+        print("Error: ${data['error']}");
+      }
+    } catch (e) {
+      print("An error occurred: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +99,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Column(
                     children: [
                       HoverTextField(
-                        controller: _usernameController,
+                        controller: _emailController,
                         labelText: 'Username',
                       ),
                       const SizedBox(height: 15),
@@ -73,7 +117,7 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      // Handle login logic here
+                      login();
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey[800], // Darker gray background

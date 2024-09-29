@@ -37,6 +37,8 @@ dependencies:
   email_validator: '^2.1.17'
   string_validator_plus: ^0.0.7
   otp: ^3.1.4
+  firebase_auth: ^5.2.0
+  google_sign_in: ^6.2.1
 
 
   # The following adds the Cupertino Icons font to your application.
